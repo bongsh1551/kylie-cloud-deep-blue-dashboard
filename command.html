@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>HERMES // ENTERPRISE DEEP BLUE COMMAND</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --abyss-bg: #02060d;
+      --abyss-card: rgba(7, 16, 32, 0.72);
+      --ice-blue: #38bdf8;
+      --deep-cyan: #0284c7;
+      --glacier: #e0f2fe;
+      --border-glow: rgba(56, 189, 248, 0.22);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--abyss-bg);
+      color: var(--glacier);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    #abyssCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .abyss-panel {
+      background: linear-gradient(160deg, rgba(10, 22, 42, 0.78), rgba(4, 10, 22, 0.88));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(186, 230, 253, 0.12);
+      position: relative;
+    }
+
+    .abyss-panel::before, .abyss-panel::after {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-color: var(--ice-blue);
+      border-style: solid;
+      opacity: 0.65;
+      pointer-events: none;
+    }
+    .abyss-panel::before { top: -1px; left: -1px; border-width: 1.5px 0 0 1.5px; }
+    .abyss-panel::after { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; }
+
+    .ring-glow {
+      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.45));
+    }
+
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 0.75; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.02); }
+    }
+    .holo-pulse {
+      animation: pulse-slow 4s infinite ease-in-out;
+    }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: rgba(2, 6, 13, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 99px; }
+  </style>
+</head>
+<body class="px-3.5 py-4 md:px-8 md:py-6">
+
+  <canvas id="abyssCanvas"></canvas>
+
+  <div class="relative z-10 max-w-7xl mx-auto flex flex-col gap-4">
+
+    <!-- TOP COMMAND HEADER -->
+    <header class="abyss-panel rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-400/40 flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.25)]">
+          <div class="w-3 h-3 rounded-full bg-sky-400 animate-ping"></div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm md:text-base font-bold tracking-[0.2em] text-white uppercase">HERMES // DEEP BLUE COMMAND</h1>
+            <span id="connBadge" class="mono text-[9px] px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30">SNAPSHOT</span>
+          </div>
+          <p class="mono text-[10px] text-sky-300/60 tracking-widest mt-0.5" id="lastSyncText">LAST SYNC // --:--:--</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div class="bg-slate-950/80 border border-sky-500/20 rounded-xl p-1 grid grid-cols-4 gap-1 relative flex-1 sm:flex-initial">
+          <div id="rangeIndicator" class="absolute top-1 bottom-1 left-1 w-[calc(25%-4px)] rounded-lg bg-sky-500/25 border border-sky-400/60 transition-transform duration-300 pointer-events-none" style="transform: translateX(100%);"></div>
+          <button data-range="1h"  class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10">1H</button>
+          <button data-range="24h" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-sky-200 z-10">24H</button>
+          <button data-range="7d"  class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10">7D</button>
+          <button data-range="30d" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10">30D</button>
+        </div>
+
+        <button id="refreshBtn" title="Sync Now" class="mono text-xs px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/40 active:scale-95 transition">
+          ↻ SYNC
+        </button>
+        <button id="configBtn" title="Endpoint & Basic Auth" class="mono text-xs px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-sky-500/25 active:scale-95 transition">
+          ⚙ AUTH
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN GRID: DESKTOP 12-COL / MOBILE STACK -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+      <!-- LEFT COLUMN (4 COLS): SYSTEM HEALTH, SUCCESS RATE & MEMORY LOAD -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+
+        <!-- SYSTEM HEALTH & LATENCY -->
+        <section class="abyss-panel rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">SYSTEM HEALTH // CORE</span>
+            <span id="sysStatusBadge" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/40">● NOMINAL</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-3">
+              <span class="mono text-[10px] text-slate-400 block">UPTIME</span>
+              <span id="uptimeDisplay" class="mono text-lg font-bold text-white mt-0.5 block">13h 37m</span>
+            </div>
+            <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-3">
+              <span class="mono text-[10px] text-slate-400 block">AVG LATENCY</span>
+              <span id="latencyDisplay" class="mono text-lg font-bold text-sky-300 mt-0.5 block">16.33 s</span>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-sky-500/15">
+            <div class="flex items-center justify-between mono text-xs mb-1.5">
+              <span class="text-slate-400">EXECUTION SUCCESS</span>
+              <span id="successRateText" class="text-sky-200 font-bold">100.0% (421/421)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-950 overflow-hidden border border-sky-500/20">
+              <div id="successRateBar" class="h-full bg-gradient-to-r from-sky-600 via-sky-400 to-white rounded-full transition-all duration-700" style="width: 100%"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MEMORY & CONTEXT LOAD -->
+        <section class="abyss-panel rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">NEURAL MEMORY BANK</span>
+            <span id="memPctBadge" class="mono text-xs font-bold text-sky-300">6.11%</span>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+              <svg class="w-full h-full -rotate-90 ring-glow" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(56,189,248,0.12)" stroke-width="7" />
+                <circle id="memRing" cx="40" cy="40" r="32" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"
+                        stroke-dasharray="201.06" stroke-dashoffset="188.7" class="transition-all duration-700" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="memTotalChars" class="mono text-xs font-bold text-white">61.1K</span>
+                <span class="mono text-[8px] text-slate-400">CHARS</span>
+              </div>
+            </div>
+
+            <div class="flex-1 flex flex-col gap-1.5 mono text-[11px]" id="memFilesList"></div>
+          </div>
+        </section>
+
+        <!-- SCHEDULED CRON MISSIONS -->
+        <section class="abyss-panel rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">ACTIVE CRON MISSIONS</span>
+            <span id="cronCountBadge" class="mono text-[10px] text-slate-400">0 ACTIVE</span>
+          </div>
+          <div id="cronContainer" class="flex flex-col gap-2"></div>
+        </section>
+
+      </div>
+
+      <!-- CENTER COLUMN (4 COLS): DEEP ABYSS HOLOGRAPHIC TOKEN CORE -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+        <section class="abyss-panel rounded-2xl p-5 flex flex-col items-center justify-between h-full relative overflow-hidden">
+          <div class="w-full flex items-center justify-between">
+            <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">GLOBAL TOKEN THROUGHPUT</span>
+            <span id="reqCountBadge" class="mono text-[10px] text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-400/25">421 REQ</span>
+          </div>
+
+          <!-- HERO HOLOGRAPHIC RING -->
+          <div class="relative w-60 h-60 my-4 flex items-center justify-center holo-pulse">
+            <svg class="w-full h-full -rotate-90 ring-glow" viewBox="0 0 240 240">
+              <circle cx="120" cy="120" r="110" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-dasharray="4 6" />
+              <circle cx="120" cy="120" r="92" fill="none" stroke="rgba(14, 165, 233, 0.14)" stroke-width="14" />
+              <circle id="inputRing" cx="120" cy="120" r="92" fill="none" stroke="url(#abyssGrad)" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="578" stroke-dashoffset="40" class="transition-all duration-1000" />
+              <circle cx="120" cy="120" r="72" fill="none" stroke="rgba(224, 242, 254, 0.1)" stroke-width="5" />
+              <circle id="outputRing" cx="120" cy="120" r="72" fill="none" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round"
+                      stroke-dasharray="452" stroke-dashoffset="360" class="transition-all duration-1000" />
+              <defs>
+                <linearGradient id="abyssGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#0284c7" />
+                  <stop offset="50%" stop-color="#38bdf8" />
+                  <stop offset="100%" stop-color="#e0f2fe" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <span class="mono text-[9px] tracking-[0.25em] text-sky-300/80 uppercase">TOTAL BURN</span>
+              <span id="heroTotalTokens" class="mono text-3xl font-extrabold text-white tracking-tight mt-0.5 drop-shadow-[0_0_14px_rgba(56,189,248,0.65)]">31.59M</span>
+              <div class="mt-1.5 px-2.5 py-0.5 rounded-full bg-sky-400/15 border border-sky-300/40">
+                <span class="mono text-xs font-bold text-white" id="heroEquivCost">$5.20</span>
+                <span class="mono text-[9px] text-sky-200/80 ml-0.5">EQ.VAL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="w-full grid grid-cols-2 gap-3">
+            <div class="bg-slate-950/70 border border-sky-400/25 rounded-xl p-3 flex flex-col items-center text-center">
+              <span class="mono text-[9px] text-sky-300/75 tracking-widest">INPUT TRAFFIC</span>
+              <span id="subInputTokens" class="mono text-base font-bold text-sky-300 mt-1">31,314,529</span>
+              <span id="subInputPct" class="mono text-[10px] text-slate-400 mt-0.5">99.1% SHARE</span>
+            </div>
+            <div class="bg-slate-950/70 border border-sky-100/25 rounded-xl p-3 flex flex-col items-center text-center">
+              <span class="mono text-[9px] text-sky-100/75 tracking-widest">OUTPUT TRAFFIC</span>
+              <span id="subOutputTokens" class="mono text-base font-bold text-white mt-1">277,744</span>
+              <span id="subOutputPct" class="mono text-[10px] text-slate-400 mt-0.5">0.9% SHARE</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN (4 COLS): DYNAMIC MODEL MATRIX & RATE LIMIT GUARD -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+
+        <!-- ACTIVE MODEL NODES -->
+        <section class="abyss-panel rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">ACTIVE MODEL MATRIX</span>
+            <span id="modelCountBadge" class="mono text-[10px] text-sky-300">2 NODES</span>
+          </div>
+
+          <div id="modelsList" class="flex flex-col gap-2.5 max-h-72 overflow-y-auto pr-1"></div>
+        </section>
+
+        <!-- RATE LIMIT GUARD & ROTATOR -->
+        <section class="abyss-panel rounded-2xl p-4 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">429 SHIELD // ROTATOR</span>
+              <span id="rotatorStatusBadge" class="mono text-[10px] font-bold text-sky-300 bg-sky-500/15 px-2 py-0.5 rounded border border-sky-400/35">ACTIVE // SAFE</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 mb-3">
+              <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-2.5">
+                <span class="mono text-[9px] text-slate-400 block">TPM PRESSURE</span>
+                <span id="tpmUsageText" class="mono text-sm font-bold text-white mt-0.5 block">0.0% / 200K</span>
+              </div>
+              <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-2.5">
+                <span class="mono text-[9px] text-slate-400 block">429 HITS (24H)</span>
+                <span id="rateLimitHitsText" class="mono text-sm font-bold text-sky-300 mt-0.5 block">0 EVENTS</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <span class="mono text-[9px] text-slate-400 tracking-widest uppercase block mb-1.5">API KEY POOL TELEMETRY</span>
+            <div id="keyPoolGrid" class="grid grid-cols-2 gap-1.5"></div>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- AUTH & ENDPOINT CONFIGURATION MODAL -->
+  <div id="authModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="abyss-panel rounded-2xl max-w-md w-full p-5 flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-sky-500/20 pb-3">
+        <div>
+          <h2 class="text-sm font-bold tracking-widest text-white uppercase">COMMAND UPLINK // AUTH</h2>
+          <p class="mono text-[10px] text-sky-300/70 mt-0.5">CONFIGURE HERMES ENDPOINT & BASIC AUTH</p>
+        </div>
+        <button id="closeModalBtn" class="mono text-slate-400 hover:text-white text-sm px-2 py-1">✕</button>
+      </div>
+
+      <div class="flex flex-col gap-3 mono text-xs">
+        <div>
+          <label class="text-[10px] text-sky-300 block mb-1">API BASE URL (Leave blank if same host)</label>
+          <input id="apiBaseInput" type="url" placeholder="https://your-hermes-tunnel.example.com"
+                 class="w-full bg-slate-950 border border-sky-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-sky-400" />
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="text-[10px] text-sky-300 block mb-1">USERNAME</label>
+            <input id="authUserInput" type="text" placeholder="admin"
+                   class="w-full bg-slate-950 border border-sky-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-sky-400" />
+          </div>
+          <div>
+            <label class="text-[10px] text-sky-300 block mb-1">PASSWORD</label>
+            <input id="authPassInput" type="password" placeholder="••••••••"
+                   class="w-full bg-slate-950 border border-sky-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-sky-400" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="saveAuthBtn" class="mono text-xs font-bold px-4 py-2 rounded-xl bg-sky-500 text-slate-950 hover:bg-sky-400 transition">
+          SAVE & CONNECT
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FALLBACK_DATA = {
+      generated_at: "2026-11-17T21:08:45+08:00",
+      range: "24h",
+      token_telemetry: {
+        total_requests: 421,
+        total_input_tokens: 31314529,
+        total_output_tokens: 277744,
+        equivalent_cost_usd: 0.6484,
+        per_model: [
+          { provider: "custom:sensenova", model: "sensenova-6.8-flash-lite", requests: 363, input_tokens: 29259045, output_tokens: 265029, share_pct: 86.22, mapping: "unmapped", cost_usd: 0.0 },
+          { provider: "gemini", model: "gemini-3.1-flash-lite", requests: 58, input_tokens: 2055484, output_tokens: 12715, share_pct: 13.78, mapping: "mapped_near", cost_usd: 0.6484 }
+        ]
+      },
+      system_health: { status: "NOMINAL", uptime_seconds: 49042.2, avg_latency_ms: 16328.6 },
+      success_rate: { success_rate_pct: 100.0, total_requests: 421, successful: 421, failed: 0 },
+      cron_jobs: [],
+      memory_load: {
+        total_chars: 61118,
+        memory_usage_pct: 6.11,
+        cap_chars: 1000000,
+        files: { MEMORY: 39316, USER: 8044, SOUL: 13758 }
+      },
+      rate_limit_guard: {
+        rotator_status: "ACTIVE // SAFE",
+        tpm: {
+          limit: 200000,
+          window_s: 60,
+          cooldown_s: 75,
+          per_key: [
+            { key: "AQ.A...17Ug", rolling_tokens: 0, cooldown_left_s: 0.0 },
+            { key: "AIza...9kLm", rolling_tokens: 0, cooldown_left_s: 0.0 },
+            { key: "AIza...3xPq", rolling_tokens: 0, cooldown_left_s: 0.0 },
+            { key: "AIza...7wRt", rolling_tokens: 0, cooldown_left_s: 0.0 }
+          ],
+          tpm_usage_pct: 0.0
+        },
+        rate_limited_24h: 0
+      }
+    };
+
+    let currentRange = '24h';
+
+    const canvas = document.getElementById('abyssCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let wavePhase = 0;
+
+    function initCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      particles = Array.from({ length: 45 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: 0.8 + Math.random() * 1.8,
+        vy: -0.15 - Math.random() * 0.35,
+        alpha: 0.15 + Math.random() * 0.45
+      }));
+    }
+    initCanvas();
+    window.addEventListener('resize', initCanvas);
+
+    function renderAbyssBg() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      wavePhase += 0.012;
+
+      const grad = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.45, 20, canvas.width * 0.5, canvas.height * 0.45, canvas.width * 0.7);
+      grad.addColorStop(0, 'rgba(2, 132, 199, 0.14)');
+      grad.addColorStop(0.6, 'rgba(3, 105, 161, 0.04)');
+      grad.addColorStop(1, 'rgba(2, 6, 13, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let w = 0; w < 3; w++) {
+        ctx.beginPath();
+        for (let x = 0; x <= canvas.width; x += 24) {
+          const y = canvas.height * (0.48 + w * 0.04) + Math.sin(x * 0.004 + wavePhase + w) * 26;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = `rgba(56, 189, 248, ${0.07 - w * 0.018})`;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+      }
+
+      particles.forEach(p => {
+        p.y += p.vy;
+        if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(125, 211, 252, ${p.alpha})`;
+        ctx.fill();
+      });
+
+      requestAnimationFrame(renderAbyssBg);
+    }
+    renderAbyssBg();
+
+    function fmtCompact(n) {
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return Math.round(n).toString();
+    }
+
+    function fmtUptime(sec) {
+      const d = Math.floor(sec / 86400);
+      const h = Math.floor((sec % 86400) / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      if (d > 0) return `${d}d ${h}h ${m}m`;
+      return `${h}h ${m}m`;
+    }
+
+    function computeModelCost(m) {
+      if (m.cost_usd && m.cost_usd > 0) return m.cost_usd;
+      return ((m.input_tokens || 0) / 1e6) * 0.15 + ((m.output_tokens || 0) / 1e6) * 0.60;
+    }
+
+    function renderDashboard(data, isLive) {
+      const connBadge = document.getElementById('connBadge');
+      if (isLive) {
+        connBadge.textContent = 'LIVE UPLINK';
+        connBadge.className = 'mono text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+      } else {
+        connBadge.textContent = 'SNAPSHOT // AUTH REQ';
+        connBadge.className = 'mono text-[9px] px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30';
+      }
+
+      const ts = data.generated_at ? data.generated_at.split('T')[1]?.slice(0, 8) : new Date().toTimeString().slice(0, 8);
+      document.getElementById('lastSyncText').textContent = `SYNCED // ${ts} (${data.range.toUpperCase()})`;
+
+      const tt = data.token_telemetry;
+      const totalTok = (tt.total_input_tokens || 0) + (tt.total_output_tokens || 0);
+      let totalEquivCost = 0;
+      (tt.per_model || []).forEach(m => { totalEquivCost += computeModelCost(m); });
+
+      document.getElementById('reqCountBadge').textContent = `${tt.total_requests} REQ`;
+      document.getElementById('heroTotalTokens').textContent = fmtCompact(totalTok);
+      document.getElementById('heroEquivCost').textContent = '$' + totalEquivCost.toFixed(2);
+
+      document.getElementById('subInputTokens').textContent = (tt.total_input_tokens || 0).toLocaleString('en-US');
+      document.getElementById('subOutputTokens').textContent = (tt.total_output_tokens || 0).toLocaleString('en-US');
+
+      const inShare = totalTok > 0 ? ((tt.total_input_tokens / totalTok) * 100).toFixed(1) : '0.0';
+      const outShare = totalTok > 0 ? ((tt.total_output_tokens / totalTok) * 100).toFixed(1) : '0.0';
+      document.getElementById('subInputPct').textContent = `${inShare}% SHARE`;
+      document.getElementById('subOutputPct').textContent = `${outShare}% SHARE`;
+
+      const outOffset = 452 - (452 * Math.min(100, parseFloat(outShare) * 4)) / 100;
+      document.getElementById('outputRing').style.strokeDashoffset = outOffset;
+
+      const sh = data.system_health;
+      document.getElementById('sysStatusBadge').textContent = `● ${sh.status || 'NOMINAL'}`;
+      document.getElementById('uptimeDisplay').textContent = fmtUptime(sh.uptime_seconds || 0);
+      const latSec = ((sh.avg_latency_ms || 0) / 1000).toFixed(2);
+      document.getElementById('latencyDisplay').textContent = `${latSec} s`;
+
+      const sr = data.success_rate;
+      document.getElementById('successRateText').textContent = `${sr.success_rate_pct.toFixed(1)}% (${sr.successful}/${sr.total_requests})`;
+      document.getElementById('successRateBar').style.width = `${sr.success_rate_pct}%`;
+
+      const ml = data.memory_load;
+      document.getElementById('memPctBadge').textContent = `${ml.memory_usage_pct.toFixed(2)}%`;
+      document.getElementById('memTotalChars').textContent = fmtCompact(ml.total_chars);
+      const memOffset = 201.06 - (201.06 * Math.min(100, ml.memory_usage_pct)) / 100;
+      document.getElementById('memRing').style.strokeDashoffset = memOffset;
+
+      const memFilesEl = document.getElementById('memFilesList');
+      memFilesEl.innerHTML = '';
+      Object.entries(ml.files || {}).forEach(([fname, chars]) => {
+        memFilesEl.innerHTML += `
+          <div class="flex items-center justify-between bg-slate-950/60 px-2.5 py-1 rounded-lg border border-sky-500/10">
+            <span class="text-sky-300 font-semibold">${fname}.md</span>
+            <span class="text-slate-300">${chars.toLocaleString()} ch</span>
+          </div>
+        `;
+      });
+
+      const crons = data.cron_jobs || [];
+      document.getElementById('cronCountBadge').textContent = `${crons.length} ACTIVE`;
+      const cronEl = document.getElementById('cronContainer');
+      if (crons.length === 0) {
+        cronEl.innerHTML = `
+          <div class="border border-dashed border-sky-500/20 rounded-xl p-3 text-center mono text-[10px] text-slate-400">
+            STANDBY // NO SCHEDULED CRON JOBS MOUNTED
+          </div>
+        `;
+      } else {
+        cronEl.innerHTML = crons.map(c => `
+          <div class="bg-slate-950/60 border border-sky-400/25 rounded-xl px-3 py-2 flex items-center justify-between mono text-xs">
+            <span class="text-white font-semibold">${c.name || c.id}</span>
+            <span class="text-sky-300 text-[10px]">${c.schedule || 'ACTIVE'}</span>
+          </div>
+        `).join('');
+      }
+
+      const models = tt.per_model || [];
+      document.getElementById('modelCountBadge').textContent = `${models.length} NODES`;
+      const modelsEl = document.getElementById('modelsList');
+      modelsEl.innerHTML = '';
+
+      models.forEach((m, idx) => {
+        const mTotal = (m.input_tokens || 0) + (m.output_tokens || 0);
+        const mCost = computeModelCost(m);
+        const cleanProvider = (m.provider || '').replace('custom:', '').toUpperCase();
+        const isPrimary = idx === 0;
+
+        modelsEl.innerHTML += `
+          <div class="bg-slate-950/75 border ${isPrimary ? 'border-sky-400/50 shadow-[0_0_20px_-8px_rgba(56,189,248,0.5)]' : 'border-sky-500/20'} rounded-xl p-3 transition">
+            <div class="flex items-center justify-between mb-1">
+              <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 font-bold tracking-wider">${cleanProvider}</span>
+              <span class="mono text-[10px] text-slate-400">${m.requests} REQ · ${m.share_pct.toFixed(1)}%</span>
+            </div>
+            <div class="flex items-baseline justify-between mt-1">
+              <span class="text-sm font-bold text-white tracking-wide truncate pr-2">${m.model}</span>
+              <span class="mono text-xs font-bold text-sky-300 shrink-0">$${mCost.toFixed(2)}</span>
+            </div>
+            <div class="flex items-center justify-between mono text-[10px] text-slate-400 mt-1.5">
+              <span>IN: ${fmtCompact(m.input_tokens)}</span>
+              <span>OUT: ${fmtCompact(m.output_tokens)}</span>
+              <span class="text-white font-semibold">Σ ${fmtCompact(mTotal)}</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900 rounded-full mt-2 overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-300" style="width: ${Math.max(4, m.share_pct)}%"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      const rl = data.rate_limit_guard;
+      document.getElementById('rotatorStatusBadge').textContent = rl.rotator_status || 'ACTIVE // SAFE';
+      const tpmPct = rl.tpm?.tpm_usage_pct ?? 0;
+      const tpmLimit = fmtCompact(rl.tpm?.limit || 200000);
+      document.getElementById('tpmUsageText').textContent = `${tpmPct.toFixed(1)}% / ${tpmLimit}`;
+      document.getElementById('rateLimitHitsText').textContent = `${rl.rate_limited_24h ?? 0} EVENTS`;
+
+      const keyPoolEl = document.getElementById('keyPoolGrid');
+      keyPoolEl.innerHTML = '';
+      (rl.tpm?.per_key || []).forEach(k => {
+        const isCooling = (k.cooldown_left_s || 0) > 0;
+        keyPoolEl.innerHTML += `
+          <div class="bg-slate-950/70 border ${isCooling ? 'border-amber-400/50' : 'border-sky-500/15'} rounded-lg px-2.5 py-1.5 flex items-center justify-between mono text-[10px]">
+            <span class="text-slate-300 truncate">${k.key}</span>
+            <span class="${isCooling ? 'text-amber-300' : 'text-sky-400'} font-bold">${isCooling ? k.cooldown_left_s + 's' : 'OK'}</span>
+          </div>
+        `;
+      });
+    }
+
+    async function fetchTelemetry() {
+      const baseUrl = (localStorage.getItem('hermes_api_base') || '').replace(/\/$/, '');
+      const user = localStorage.getItem('hermes_auth_user') || '';
+      const pass = localStorage.getItem('hermes_auth_pass') || '';
+
+      const endpoint = `${baseUrl}/api/command?range=${currentRange}`;
+      const headers = {};
+      if (user && pass) {
+        headers['Authorization'] = 'Basic ' + btoa(`${user}:${pass}`);
+      }
+
+      try {
+        const res = await fetch(endpoint, { headers });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        renderDashboard(json, true);
+      } catch (err) {
+        const snap = JSON.parse(JSON.stringify(FALLBACK_DATA));
+        snap.range = currentRange;
+        renderDashboard(snap, false);
+      }
+    }
+
+    const rangeBtns = document.querySelectorAll('.range-btn');
+    const rangeIndicator = document.getElementById('rangeIndicator');
+    rangeBtns.forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        currentRange = btn.dataset.range;
+        rangeIndicator.style.transform = `translateX(${idx * 100}%)`;
+        rangeBtns.forEach(b => b.classList.replace('text-sky-200', 'text-slate-400'));
+        btn.classList.replace('text-slate-400', 'text-sky-200');
+        fetchTelemetry();
+      });
+    });
+
+    const authModal = document.getElementById('authModal');
+    document.getElementById('configBtn').addEventListener('click', () => {
+      document.getElementById('apiBaseInput').value = localStorage.getItem('hermes_api_base') || '';
+      document.getElementById('authUserInput').value = localStorage.getItem('hermes_auth_user') || '';
+      document.getElementById('authPassInput').value = localStorage.getItem('hermes_auth_pass') || '';
+      authModal.classList.remove('hidden');
+      authModal.classList.add('flex');
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+    });
+
+    document.getElementById('saveAuthBtn').addEventListener('click', () => {
+      localStorage.setItem('hermes_api_base', document.getElementById('apiBaseInput').value.trim());
+      localStorage.setItem('hermes_auth_user', document.getElementById('authUserInput').value.trim());
+      localStorage.setItem('hermes_auth_pass', document.getElementById('authPassInput').value);
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+      fetchTelemetry();
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', fetchTelemetry);
+
+    fetchTelemetry();
+    setInterval(fetchTelemetry, 15000);
+  </script>
+</body>
+</html>
