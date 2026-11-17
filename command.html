@@ -4,24 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>HERMES // ENTERPRISE DEEP BLUE COMMAND</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="theme-color" content="#02060d" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="icon" type="image/png" href="icon-192.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Deep Blue" />
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#01040a" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="icon" type="image/png" href="./icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Deep Blue Command" />
   <style>
     :root {
-      --abyss-bg: #02060d;
-      --abyss-card: rgba(7, 16, 32, 0.72);
+      --abyss-bg: #01040a;
+      --abyss-card: rgba(6, 15, 30, 0.72);
       --ice-blue: #38bdf8;
+      --cyan-glow: #00f0ff;
       --deep-cyan: #0284c7;
       --glacier: #e0f2fe;
-      --border-glow: rgba(56, 189, 248, 0.22);
+      --border-glow: rgba(56, 189, 248, 0.28);
     }
 
     * {
@@ -43,6 +44,7 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
+    /* 背景深海画布与全息网格扫描层 */
     #abyssCanvas {
       position: fixed;
       inset: 0;
@@ -52,77 +54,230 @@
       pointer-events: none;
     }
 
+    .holo-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: radial-gradient(circle at 50% 45%, black 35%, transparent 92%);
+      -webkit-mask-image: radial-gradient(circle at 50% 45%, black 35%, transparent 92%);
+    }
+
+    .scanline-sweep {
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 140px;
+      z-index: 2;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent 0%, rgba(56, 189, 248, 0.06) 50%, rgba(0, 240, 255, 0.14) 98%, rgba(224, 242, 254, 0.35) 100%);
+      animation: screenScan 9s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      will-change: transform;
+    }
+
+    @keyframes screenScan {
+      0% { transform: translateY(-160px); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(105vh); opacity: 0; }
+    }
+
+    /* 战术玻璃面板与动态流光边框 */
     .abyss-panel {
-      background: linear-gradient(160deg, rgba(10, 22, 42, 0.78), rgba(4, 10, 22, 0.88));
+      background: linear-gradient(155deg, rgba(9, 21, 42, 0.78), rgba(3, 9, 20, 0.88));
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
       border: 1px solid var(--border-glow);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(186, 230, 253, 0.12);
+      box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.72),
+        inset 0 1px 0 rgba(186, 230, 253, 0.16),
+        inset 0 0 24px rgba(2, 132, 199, 0.06);
       position: relative;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease, box-shadow 0.35s ease;
     }
 
+    .abyss-panel:hover {
+      border-color: rgba(56, 189, 248, 0.52);
+      box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.8),
+        0 0 26px rgba(56, 189, 248, 0.14),
+        inset 0 1px 0 rgba(224, 242, 254, 0.28);
+    }
+
+    /* 四角战术准星呼吸灯 */
     .abyss-panel::before, .abyss-panel::after {
       content: '';
       position: absolute;
-      width: 10px;
-      height: 10px;
-      border-color: var(--ice-blue);
+      width: 11px;
+      height: 11px;
+      border-color: var(--cyan-glow);
       border-style: solid;
-      opacity: 0.65;
+      opacity: 0.75;
       pointer-events: none;
+      animation: cornerBreath 4s ease-in-out infinite;
     }
-    .abyss-panel::before { top: -1px; left: -1px; border-width: 1.5px 0 0 1.5px; }
-    .abyss-panel::after { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; }
+    .abyss-panel::before { top: -1px; left: -1px; border-width: 1.5px 0 0 1.5px; border-top-left-radius: 16px; }
+    .abyss-panel::after { bottom: -1px; right: -1px; border-width: 0 1.5px 1.5px 0; border-bottom-right-radius: 16px; }
 
+    @keyframes cornerBreath {
+      0%, 100% { opacity: 0.45; filter: drop-shadow(0 0 2px rgba(0, 240, 255, 0.2)); }
+      50% { opacity: 1; filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.8)); }
+    }
+
+    /* 面板错峰入场浮现 */
+    .panel-reveal {
+      opacity: 0;
+      transform: translateY(18px) scale(0.985);
+      animation: panelEnter 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .delay-1 { animation-delay: 0.05s; }
+    .delay-2 { animation-delay: 0.14s; }
+    .delay-3 { animation-delay: 0.22s; }
+    .delay-4 { animation-delay: 0.30s; }
+    .delay-5 { animation-delay: 0.38s; }
+    .delay-6 { animation-delay: 0.46s; }
+    .delay-7 { animation-delay: 0.54s; }
+
+    @keyframes panelEnter {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* 核心全息圆环多维旋转动画 */
     .ring-glow {
-      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.45));
+      filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.5));
     }
 
-    @keyframes pulse-slow {
-      0%, 100% { opacity: 0.75; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.02); }
+    @keyframes orbitClockwise {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes orbitCounterClockwise {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    .spin-cw-slow {
+      transform-origin: 120px 120px;
+      animation: orbitClockwise 28s linear infinite;
+    }
+
+    .spin-ccw-medium {
+      transform-origin: 120px 120px;
+      animation: orbitCounterClockwise 18s linear infinite;
+    }
+
+    .spin-radar {
+      transform-origin: 120px 120px;
+      animation: orbitClockwise 6s linear infinite;
+    }
+
+    .spin-mem-ring {
+      transform-origin: 40px 40px;
+      animation: orbitClockwise 22s linear infinite;
+    }
+
+    @keyframes corePulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.35)); }
+      50% { transform: scale(1.022); filter: drop-shadow(0 0 22px rgba(0, 240, 255, 0.65)); }
     }
     .holo-pulse {
-      animation: pulse-slow 4s infinite ease-in-out;
+      animation: corePulse 4.5s infinite ease-in-out;
+    }
+
+    /* 进度条能量流光穿梭特效 */
+    .energy-bar {
+      position: relative;
+      overflow: hidden;
+    }
+    .energy-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -60%;
+      width: 55%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+      animation: barShimmer 2.6s infinite ease-in-out;
+    }
+
+    @keyframes barShimmer {
+      0% { left: -60%; }
+      100% { left: 130%; }
+    }
+
+    /* 顶部雷达信标波纹 */
+    @keyframes sonarPing {
+      0% { transform: scale(0.8); opacity: 0.9; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .sonar-ring {
+      animation: sonarPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    /* 数字更新微闪高亮 */
+    @keyframes valueFlash {
+      0% { text-shadow: 0 0 18px rgba(0, 240, 255, 0.95); color: #ffffff; }
+      100% { text-shadow: 0 0 0px rgba(0, 240, 255, 0); }
+    }
+    .flash-update {
+      animation: valueFlash 0.9s ease-out;
+    }
+
+    /* 按钮刷新旋转 */
+    .spin-once {
+      animation: orbitClockwise 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: rgba(2, 6, 13, 0.5); }
-    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 99px; }
   </style>
 </head>
 <body class="px-3.5 py-4 md:px-8 md:py-6">
 
+  <!-- 深海气泡粒子画布 + 全息网格 + 激光扫描线 -->
   <canvas id="abyssCanvas"></canvas>
+  <div class="holo-grid-overlay"></div>
+  <div class="scanline-sweep"></div>
 
   <div class="relative z-10 max-w-7xl mx-auto flex flex-col gap-4">
 
     <!-- TOP COMMAND HEADER -->
-    <header class="abyss-panel rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <header class="abyss-panel panel-reveal delay-1 rounded-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-400/40 flex items-center justify-center shadow-[0_0_20px_rgba(56,189,248,0.25)]">
-          <div class="w-3 h-3 rounded-full bg-sky-400 animate-ping"></div>
+        <div class="relative w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-400/45 flex items-center justify-center shadow-[0_0_22px_rgba(56,189,248,0.35)]">
+          <div class="absolute w-3.5 h-3.5 rounded-full border border-cyan-300 sonar-ring"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_10px_#00f0ff]"></div>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-sm md:text-base font-bold tracking-[0.2em] text-white uppercase">HERMES // DEEP BLUE COMMAND</h1>
+            <h1 class="text-sm md:text-base font-bold tracking-[0.2em] text-white uppercase drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">HERMES // DEEP BLUE COMMAND</h1>
             <span id="connBadge" class="mono text-[9px] px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30">SNAPSHOT</span>
           </div>
-          <p class="mono text-[10px] text-sky-300/60 tracking-widest mt-0.5" id="lastSyncText">LAST SYNC // --:--:--</p>
+          <p class="mono text-[10px] text-sky-300/65 tracking-widest mt-0.5" id="lastSyncText">LAST SYNC // --:--:--</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-        <div class="bg-slate-950/80 border border-sky-500/20 rounded-xl p-1 grid grid-cols-4 gap-1 relative flex-1 sm:flex-initial">
-          <div id="rangeIndicator" class="absolute top-1 bottom-1 left-1 w-[calc(25%-4px)] rounded-lg bg-sky-500/25 border border-sky-400/60 transition-transform duration-300 pointer-events-none" style="transform: translateX(100%);"></div>
-          <button data-range="1h"  class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10">1H</button>
-          <button data-range="24h" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-sky-200 z-10">24H</button>
-          <button data-range="7d"  class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10">7D</button>
-          <button data-range="30d" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10">30D</button>
+        <div class="bg-slate-950/85 border border-sky-500/25 rounded-xl p-1 grid grid-cols-5 gap-1 relative flex-1 sm:flex-initial">
+          <div id="rangeIndicator" class="absolute top-1 bottom-1 left-1 w-[calc(20%-4px)] rounded-lg bg-sky-500/25 border border-cyan-400/70 shadow-[0_0_12px_rgba(56,189,248,0.3)] transition-transform duration-300 pointer-events-none" style="transform: translateX(100%);"></div>
+          <button data-range="1h"  class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10 transition-colors">1H</button>
+          <button data-range="24h" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-sky-200 z-10 transition-colors">24H</button>
+          <button data-range="7d"  class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10 transition-colors">7D</button>
+          <button data-range="30d" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10 transition-colors">30D</button>
+          <button data-range="90d" class="range-btn mono text-[11px] font-bold px-2.5 py-1 text-slate-400 z-10 transition-colors">90D</button>
         </div>
 
-        <button id="refreshBtn" title="Sync Now" class="mono text-xs px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/40 active:scale-95 transition">
-          ↻ SYNC
+        <button id="refreshBtn" title="Sync Now" class="mono text-xs px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-400/45 active:scale-95 transition flex items-center gap-1">
+          <span id="syncIcon" class="inline-block">↻</span> SYNC
         </button>
         <button id="configBtn" title="Endpoint & Basic Auth" class="mono text-xs px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-sky-500/25 active:scale-95 transition">
           ⚙ AUTH
@@ -137,18 +292,18 @@
       <div class="lg:col-span-4 flex flex-col gap-4">
 
         <!-- SYSTEM HEALTH & LATENCY -->
-        <section class="abyss-panel rounded-2xl p-4">
+        <section class="abyss-panel panel-reveal delay-2 rounded-2xl p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">SYSTEM HEALTH // CORE</span>
-            <span id="sysStatusBadge" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/40">● NOMINAL</span>
+            <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">SYSTEM HEALTH // CORE</span>
+            <span id="sysStatusBadge" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/45 shadow-[0_0_12px_rgba(16,185,129,0.2)]">● NOMINAL</span>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
-            <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-3">
+            <div class="bg-slate-950/65 border border-sky-500/20 rounded-xl p-3 relative overflow-hidden">
               <span class="mono text-[10px] text-slate-400 block">UPTIME</span>
               <span id="uptimeDisplay" class="mono text-lg font-bold text-white mt-0.5 block">13h 37m</span>
             </div>
-            <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-3">
+            <div class="bg-slate-950/65 border border-sky-500/20 rounded-xl p-3 relative overflow-hidden">
               <span class="mono text-[10px] text-slate-400 block">AVG LATENCY</span>
               <span id="latencyDisplay" class="mono text-lg font-bold text-sky-300 mt-0.5 block">16.33 s</span>
             </div>
@@ -159,22 +314,23 @@
               <span class="text-slate-400">EXECUTION SUCCESS</span>
               <span id="successRateText" class="text-sky-200 font-bold">100.0% (421/421)</span>
             </div>
-            <div class="w-full h-2 rounded-full bg-slate-950 overflow-hidden border border-sky-500/20">
-              <div id="successRateBar" class="h-full bg-gradient-to-r from-sky-600 via-sky-400 to-white rounded-full transition-all duration-700" style="width: 100%"></div>
+            <div class="w-full h-2 rounded-full bg-slate-950 overflow-hidden border border-sky-500/25">
+              <div id="successRateBar" class="energy-bar h-full bg-gradient-to-r from-sky-600 via-cyan-400 to-white rounded-full transition-all duration-700" style="width: 100%"></div>
             </div>
           </div>
         </section>
 
         <!-- MEMORY & CONTEXT LOAD -->
-        <section class="abyss-panel rounded-2xl p-4">
+        <section class="abyss-panel panel-reveal delay-3 rounded-2xl p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">NEURAL MEMORY BANK</span>
-            <span id="memPctBadge" class="mono text-xs font-bold text-sky-300">6.11%</span>
+            <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">NEURAL MEMORY BANK</span>
+            <span id="memPctBadge" class="mono text-xs font-bold text-cyan-300">6.11%</span>
           </div>
 
           <div class="flex items-center gap-4">
             <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
               <svg class="w-full h-full -rotate-90 ring-glow" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="37" fill="none" stroke="rgba(56,189,248,0.28)" stroke-width="1" stroke-dasharray="3 5" class="spin-mem-ring" />
                 <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(56,189,248,0.12)" stroke-width="7" />
                 <circle id="memRing" cx="40" cy="40" r="32" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"
                         stroke-dasharray="201.06" stroke-dashoffset="188.7" class="transition-all duration-700" />
@@ -190,9 +346,9 @@
         </section>
 
         <!-- SCHEDULED CRON MISSIONS -->
-        <section class="abyss-panel rounded-2xl p-4">
+        <section class="abyss-panel panel-reveal delay-4 rounded-2xl p-4">
           <div class="flex items-center justify-between mb-2.5">
-            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">ACTIVE CRON MISSIONS</span>
+            <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">ACTIVE CRON MISSIONS</span>
             <span id="cronCountBadge" class="mono text-[10px] text-slate-400">0 ACTIVE</span>
           </div>
           <div id="cronContainer" class="flex flex-col gap-2"></div>
@@ -202,49 +358,63 @@
 
       <!-- CENTER COLUMN (4 COLS): DEEP ABYSS HOLOGRAPHIC TOKEN CORE -->
       <div class="lg:col-span-4 flex flex-col gap-4">
-        <section class="abyss-panel rounded-2xl p-5 flex flex-col items-center justify-between h-full relative overflow-hidden">
+        <section class="abyss-panel panel-reveal delay-3 rounded-2xl p-5 flex flex-col items-center justify-between h-full relative overflow-hidden">
           <div class="w-full flex items-center justify-between">
-            <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">GLOBAL TOKEN THROUGHPUT</span>
-            <span id="reqCountBadge" class="mono text-[10px] text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-400/25">421 REQ</span>
+            <span class="mono text-[10px] text-sky-300/80 tracking-[0.2em] uppercase">GLOBAL TOKEN THROUGHPUT</span>
+            <span id="reqCountBadge" class="mono text-[10px] text-cyan-200 bg-sky-500/15 px-2 py-0.5 rounded border border-cyan-400/35 shadow-[0_0_12px_rgba(56,189,248,0.25)]">421 REQ</span>
           </div>
 
-          <!-- HERO HOLOGRAPHIC RING -->
-          <div class="relative w-60 h-60 my-4 flex items-center justify-center holo-pulse">
+          <!-- HERO HOLOGRAPHIC RING WITH MULTI-AXIS ROTATION & RADAR SWEEP -->
+          <div class="relative w-64 h-64 my-3 flex items-center justify-center holo-pulse">
             <svg class="w-full h-full -rotate-90 ring-glow" viewBox="0 0 240 240">
-              <circle cx="120" cy="120" r="110" fill="none" stroke="rgba(56,189,248,0.18)" stroke-width="1" stroke-dasharray="4 6" />
-              <circle cx="120" cy="120" r="92" fill="none" stroke="rgba(14, 165, 233, 0.14)" stroke-width="14" />
-              <circle id="inputRing" cx="120" cy="120" r="92" fill="none" stroke="url(#abyssGrad)" stroke-width="14" stroke-linecap="round"
-                      stroke-dasharray="578" stroke-dashoffset="40" class="transition-all duration-1000" />
-              <circle cx="120" cy="120" r="72" fill="none" stroke="rgba(224, 242, 254, 0.1)" stroke-width="5" />
-              <circle id="outputRing" cx="120" cy="120" r="72" fill="none" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round"
-                      stroke-dasharray="452" stroke-dashoffset="360" class="transition-all duration-1000" />
               <defs>
                 <linearGradient id="abyssGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stop-color="#0284c7" />
                   <stop offset="50%" stop-color="#38bdf8" />
                   <stop offset="100%" stop-color="#e0f2fe" />
                 </linearGradient>
+                <linearGradient id="radarSweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="rgba(0, 240, 255, 0)" />
+                  <stop offset="100%" stop-color="rgba(0, 240, 255, 0.38)" />
+                </linearGradient>
               </defs>
+
+              <!-- 外圈顺时针旋转战术虚线刻度盘 -->
+              <circle cx="120" cy="120" r="114" fill="none" stroke="rgba(56,189,248,0.26)" stroke-width="1.2" stroke-dasharray="3 7" class="spin-cw-slow" />
+              <!-- 雷达扫描弧光 -->
+              <circle cx="120" cy="120" r="105" fill="none" stroke="url(#radarSweepGrad)" stroke-width="2.5" stroke-dasharray="90 570" stroke-linecap="round" class="spin-radar" />
+              <!-- 主能量轨道底环 -->
+              <circle cx="120" cy="120" r="92" fill="none" stroke="rgba(14, 165, 233, 0.14)" stroke-width="14" />
+              <!-- 主输入能量弧 -->
+              <circle id="inputRing" cx="120" cy="120" r="92" fill="none" stroke="url(#abyssGrad)" stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="578" stroke-dashoffset="40" class="transition-all duration-1000" />
+              <!-- 中层逆时针旋转精密刻度环 -->
+              <circle cx="120" cy="120" r="80" fill="none" stroke="rgba(125, 211, 252, 0.35)" stroke-width="1" stroke-dasharray="2 10" class="spin-ccw-medium" />
+              <!-- 内圈输出底环 -->
+              <circle cx="120" cy="120" r="70" fill="none" stroke="rgba(224, 242, 254, 0.1)" stroke-width="5" />
+              <!-- 内圈输出能量弧 -->
+              <circle id="outputRing" cx="120" cy="120" r="70" fill="none" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round"
+                      stroke-dasharray="440" stroke-dashoffset="350" class="transition-all duration-1000" />
             </svg>
 
             <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-              <span class="mono text-[9px] tracking-[0.25em] text-sky-300/80 uppercase">TOTAL BURN</span>
-              <span id="heroTotalTokens" class="mono text-3xl font-extrabold text-white tracking-tight mt-0.5 drop-shadow-[0_0_14px_rgba(56,189,248,0.65)]">31.59M</span>
-              <div class="mt-1.5 px-2.5 py-0.5 rounded-full bg-sky-400/15 border border-sky-300/40">
+              <span class="mono text-[9px] tracking-[0.28em] text-cyan-300/85 uppercase">TOTAL BURN</span>
+              <span id="heroTotalTokens" class="mono text-3xl font-extrabold text-white tracking-tight mt-0.5 drop-shadow-[0_0_16px_rgba(56,189,248,0.75)]">31.59M</span>
+              <div class="mt-1.5 px-2.5 py-0.5 rounded-full bg-sky-400/15 border border-cyan-300/45 shadow-[0_0_14px_rgba(0,240,255,0.2)]">
                 <span class="mono text-xs font-bold text-white" id="heroEquivCost">$5.20</span>
-                <span class="mono text-[9px] text-sky-200/80 ml-0.5">EQ.VAL</span>
+                <span class="mono text-[9px] text-sky-200/85 ml-0.5">EQ.VAL</span>
               </div>
             </div>
           </div>
 
           <div class="w-full grid grid-cols-2 gap-3">
-            <div class="bg-slate-950/70 border border-sky-400/25 rounded-xl p-3 flex flex-col items-center text-center">
-              <span class="mono text-[9px] text-sky-300/75 tracking-widest">INPUT TRAFFIC</span>
+            <div class="bg-slate-950/75 border border-sky-400/30 rounded-xl p-3 flex flex-col items-center text-center">
+              <span class="mono text-[9px] text-sky-300/80 tracking-widest">INPUT TRAFFIC</span>
               <span id="subInputTokens" class="mono text-base font-bold text-sky-300 mt-1">31,314,529</span>
               <span id="subInputPct" class="mono text-[10px] text-slate-400 mt-0.5">99.1% SHARE</span>
             </div>
-            <div class="bg-slate-950/70 border border-sky-100/25 rounded-xl p-3 flex flex-col items-center text-center">
-              <span class="mono text-[9px] text-sky-100/75 tracking-widest">OUTPUT TRAFFIC</span>
+            <div class="bg-slate-950/75 border border-sky-100/25 rounded-xl p-3 flex flex-col items-center text-center">
+              <span class="mono text-[9px] text-sky-100/80 tracking-widest">OUTPUT TRAFFIC</span>
               <span id="subOutputTokens" class="mono text-base font-bold text-white mt-1">277,744</span>
               <span id="subOutputPct" class="mono text-[10px] text-slate-400 mt-0.5">0.9% SHARE</span>
             </div>
@@ -256,29 +426,29 @@
       <div class="lg:col-span-4 flex flex-col gap-4">
 
         <!-- ACTIVE MODEL NODES -->
-        <section class="abyss-panel rounded-2xl p-4">
+        <section class="abyss-panel panel-reveal delay-5 rounded-2xl p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">ACTIVE MODEL MATRIX</span>
-            <span id="modelCountBadge" class="mono text-[10px] text-sky-300">2 NODES</span>
+            <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">ACTIVE MODEL MATRIX</span>
+            <span id="modelCountBadge" class="mono text-[10px] text-cyan-300">2 NODES</span>
           </div>
 
           <div id="modelsList" class="flex flex-col gap-2.5 max-h-72 overflow-y-auto pr-1"></div>
         </section>
 
         <!-- RATE LIMIT GUARD & ROTATOR -->
-        <section class="abyss-panel rounded-2xl p-4 flex-1 flex flex-col justify-between">
+        <section class="abyss-panel panel-reveal delay-6 rounded-2xl p-4 flex-1 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-3">
-              <span class="mono text-[10px] text-sky-300/70 tracking-[0.2em] uppercase">429 SHIELD // ROTATOR</span>
-              <span id="rotatorStatusBadge" class="mono text-[10px] font-bold text-sky-300 bg-sky-500/15 px-2 py-0.5 rounded border border-sky-400/35">ACTIVE // SAFE</span>
+              <span class="mono text-[10px] text-sky-300/75 tracking-[0.2em] uppercase">429 SHIELD // ROTATOR</span>
+              <span id="rotatorStatusBadge" class="mono text-[10px] font-bold text-cyan-200 bg-sky-500/15 px-2 py-0.5 rounded border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.25)]">ACTIVE // SAFE</span>
             </div>
 
             <div class="grid grid-cols-2 gap-2.5 mb-3">
-              <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-2.5">
+              <div class="bg-slate-950/65 border border-sky-500/20 rounded-xl p-2.5">
                 <span class="mono text-[9px] text-slate-400 block">TPM PRESSURE</span>
                 <span id="tpmUsageText" class="mono text-sm font-bold text-white mt-0.5 block">0.0% / 200K</span>
               </div>
-              <div class="bg-slate-950/60 border border-sky-500/15 rounded-xl p-2.5">
+              <div class="bg-slate-950/65 border border-sky-500/20 rounded-xl p-2.5">
                 <span class="mono text-[9px] text-slate-400 block">429 HITS (24H)</span>
                 <span id="rateLimitHitsText" class="mono text-sm font-bold text-sky-300 mt-0.5 block">0 EVENTS</span>
               </div>
@@ -328,7 +498,7 @@
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-2">
-        <button id="saveAuthBtn" class="mono text-xs font-bold px-4 py-2 rounded-xl bg-sky-500 text-slate-950 hover:bg-sky-400 transition">
+        <button id="saveAuthBtn" class="mono text-xs font-bold px-4 py-2 rounded-xl bg-sky-500 text-slate-950 hover:bg-sky-400 transition shadow-[0_0_16px_rgba(56,189,248,0.4)]">
           SAVE & CONNECT
         </button>
       </div>
@@ -378,60 +548,159 @@
 
     let currentRange = '24h';
 
+    /* ==========================================================
+       深海全息气泡引擎：多层景深 + 流体摇曳 + 光晕气泡 + 声纳波纹
+       ========================================================== */
     const canvas = document.getElementById('abyssCanvas');
     const ctx = canvas.getContext('2d');
-    let particles = [];
+    let bubbles = [];
     let wavePhase = 0;
+
+    function createBubble(randomY = true) {
+      const layer = Math.random() < 0.55 ? 0 : (Math.random() < 0.78 ? 1 : 2);
+      const radius = layer === 0 ? (0.8 + Math.random() * 1.3) : (layer === 1 ? (2.0 + Math.random() * 2.4) : (4.2 + Math.random() * 3.8));
+      return {
+        x: Math.random() * canvas.width,
+        y: randomY ? Math.random() * canvas.height : canvas.height + 20 + Math.random() * 60,
+        r: radius,
+        layer,
+        vy: layer === 0 ? (-0.25 - Math.random() * 0.35) : (layer === 1 ? (-0.55 - Math.random() * 0.65) : (-0.9 - Math.random() * 0.85)),
+        swayAmp: 0.25 + Math.random() * 0.75,
+        swayFreq: 0.012 + Math.random() * 0.02,
+        phase: Math.random() * Math.PI * 2,
+        pulseSpeed: 0.02 + Math.random() * 0.03,
+        baseAlpha: layer === 0 ? (0.25 + Math.random() * 0.35) : (layer === 1 ? (0.4 + Math.random() * 0.4) : (0.35 + Math.random() * 0.35)),
+        isHollow: layer === 2 && Math.random() > 0.35
+      };
+    }
 
     function initCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      particles = Array.from({ length: 45 }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: 0.8 + Math.random() * 1.8,
-        vy: -0.15 - Math.random() * 0.35,
-        alpha: 0.15 + Math.random() * 0.45
-      }));
+      const count = Math.min(150, Math.max(90, Math.floor((canvas.width * canvas.height) / 6500)));
+      bubbles = Array.from({ length: count }, () => createBubble(true));
     }
     initCanvas();
     window.addEventListener('resize', initCanvas);
 
     function renderAbyssBg() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      wavePhase += 0.012;
+      wavePhase += 0.015;
 
-      const grad = ctx.createRadialGradient(canvas.width * 0.5, canvas.height * 0.45, 20, canvas.width * 0.5, canvas.height * 0.45, canvas.width * 0.7);
-      grad.addColorStop(0, 'rgba(2, 132, 199, 0.14)');
-      grad.addColorStop(0.6, 'rgba(3, 105, 161, 0.04)');
-      grad.addColorStop(1, 'rgba(2, 6, 13, 0)');
+      // 1. 深海中心冷蓝全息光源
+      const grad = ctx.createRadialGradient(
+        canvas.width * 0.5, canvas.height * 0.42, 10,
+        canvas.width * 0.5, canvas.height * 0.42, Math.max(canvas.width, canvas.height) * 0.75
+      );
+      grad.addColorStop(0, 'rgba(2, 132, 199, 0.18)');
+      grad.addColorStop(0.45, 'rgba(3, 105, 161, 0.07)');
+      grad.addColorStop(1, 'rgba(1, 4, 10, 0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (let w = 0; w < 3; w++) {
+      // 2. 深渊底部上升流光光晕
+      const bottomGlow = ctx.createLinearGradient(0, canvas.height * 0.72, 0, canvas.height);
+      bottomGlow.addColorStop(0, 'rgba(0, 240, 255, 0)');
+      bottomGlow.addColorStop(1, 'rgba(14, 165, 233, 0.12)');
+      ctx.fillStyle = bottomGlow;
+      ctx.fillRect(0, canvas.height * 0.72, canvas.width, canvas.height * 0.28);
+
+      // 3. 多层声纳流体波纹
+      for (let w = 0; w < 4; w++) {
         ctx.beginPath();
-        for (let x = 0; x <= canvas.width; x += 24) {
-          const y = canvas.height * (0.48 + w * 0.04) + Math.sin(x * 0.004 + wavePhase + w) * 26;
+        for (let x = 0; x <= canvas.width; x += 20) {
+          const y = canvas.height * (0.35 + w * 0.14) + Math.sin(x * 0.0045 + wavePhase + w * 1.3) * (24 + w * 4);
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = `rgba(56, 189, 248, ${0.07 - w * 0.018})`;
+        ctx.strokeStyle = `rgba(56, 189, 248, ${0.085 - w * 0.016})`;
         ctx.lineWidth = 1.2;
         ctx.stroke();
       }
 
-      particles.forEach(p => {
-        p.y += p.vy;
-        if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(125, 211, 252, ${p.alpha})`;
-        ctx.fill();
-      });
+      // 4. 渲染海量深海上升气泡与光球
+      for (let i = 0; i < bubbles.length; i++) {
+        const b = bubbles[i];
+        b.y += b.vy;
+        b.phase += b.swayFreq;
+        const currentX = b.x + Math.sin(b.phase) * b.swayAmp * 14;
+
+        const verticalRatio = Math.max(0, Math.min(1, b.y / canvas.height));
+        const edgeFade = verticalRatio < 0.12 ? (verticalRatio / 0.12) : (verticalRatio > 0.9 ? ((1 - verticalRatio) / 0.1) : 1);
+        const pulse = 0.78 + 0.22 * Math.sin(wavePhase * 2.5 + b.phase);
+        const alpha = Math.max(0.05, b.baseAlpha * edgeFade * pulse);
+
+        if (b.y < -25) {
+          bubbles[i] = createBubble(false);
+          continue;
+        }
+
+        ctx.save();
+        if (b.isHollow) {
+          ctx.beginPath();
+          ctx.arc(currentX, b.y, b.r, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(125, 211, 252, ${alpha})`;
+          ctx.lineWidth = 1.15;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = 'rgba(0, 240, 255, 0.55)';
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(currentX - b.r * 0.32, b.y - b.r * 0.32, b.r * 0.22, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(224, 242, 254, ${alpha * 1.1})`;
+          ctx.fill();
+        } else {
+          const bubbleGrad = ctx.createRadialGradient(currentX, b.y, 0, currentX, b.y, b.r * 2.2);
+          bubbleGrad.addColorStop(0, `rgba(224, 242, 254, ${alpha})`);
+          bubbleGrad.addColorStop(0.45, `rgba(56, 189, 248, ${alpha * 0.85})`);
+          bubbleGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+
+          ctx.beginPath();
+          ctx.arc(currentX, b.y, b.r * 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = bubbleGrad;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
 
       requestAnimationFrame(renderAbyssBg);
     }
     renderAbyssBg();
+
+    /* ==========================================================
+       数字平滑滚动动画引擎
+       ========================================================== */
+    const animatedValues = {};
+
+    function animateNumber(elId, targetVal, formatter, duration = 750) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const startVal = animatedValues[elId] !== undefined ? animatedValues[elId] : 0;
+      animatedValues[elId] = targetVal;
+
+      if (Math.abs(targetVal - startVal) < 0.0001) {
+        el.textContent = formatter(targetVal);
+        return;
+      }
+
+      const startTime = performance.now();
+      el.classList.remove('flash-update');
+      void el.offsetWidth;
+      el.classList.add('flash-update');
+
+      function step(now) {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = startVal + (targetVal - startVal) * eased;
+        el.textContent = formatter(current);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          el.textContent = formatter(targetVal);
+        }
+      }
+      requestAnimationFrame(step);
+    }
 
     function fmtCompact(n) {
       if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
@@ -456,8 +725,8 @@
     function renderDashboard(data, isLive) {
       const connBadge = document.getElementById('connBadge');
       if (isLive) {
-        connBadge.textContent = 'LIVE UPLINK';
-        connBadge.className = 'mono text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+        connBadge.textContent = '● LIVE UPLINK';
+        connBadge.className = 'mono text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/45 shadow-[0_0_12px_rgba(16,185,129,0.25)]';
       } else {
         connBadge.textContent = 'SNAPSHOT // AUTH REQ';
         connBadge.className = 'mono text-[9px] px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30';
@@ -472,33 +741,33 @@
       (tt.per_model || []).forEach(m => { totalEquivCost += computeModelCost(m); });
 
       document.getElementById('reqCountBadge').textContent = `${tt.total_requests} REQ`;
-      document.getElementById('heroTotalTokens').textContent = fmtCompact(totalTok);
-      document.getElementById('heroEquivCost').textContent = '$' + totalEquivCost.toFixed(2);
+      animateNumber('heroTotalTokens', totalTok, v => fmtCompact(v), 850);
+      animateNumber('heroEquivCost', totalEquivCost, v => '$' + v.toFixed(2), 850);
 
-      document.getElementById('subInputTokens').textContent = (tt.total_input_tokens || 0).toLocaleString('en-US');
-      document.getElementById('subOutputTokens').textContent = (tt.total_output_tokens || 0).toLocaleString('en-US');
+      animateNumber('subInputTokens', tt.total_input_tokens || 0, v => Math.round(v).toLocaleString('en-US'), 800);
+      animateNumber('subOutputTokens', tt.total_output_tokens || 0, v => Math.round(v).toLocaleString('en-US'), 800);
 
       const inShare = totalTok > 0 ? ((tt.total_input_tokens / totalTok) * 100).toFixed(1) : '0.0';
       const outShare = totalTok > 0 ? ((tt.total_output_tokens / totalTok) * 100).toFixed(1) : '0.0';
       document.getElementById('subInputPct').textContent = `${inShare}% SHARE`;
       document.getElementById('subOutputPct').textContent = `${outShare}% SHARE`;
 
-      const outOffset = 452 - (452 * Math.min(100, parseFloat(outShare) * 4)) / 100;
+      const outOffset = 440 - (440 * Math.min(100, parseFloat(outShare) * 4)) / 100;
       document.getElementById('outputRing').style.strokeDashoffset = outOffset;
 
       const sh = data.system_health;
       document.getElementById('sysStatusBadge').textContent = `● ${sh.status || 'NOMINAL'}`;
       document.getElementById('uptimeDisplay').textContent = fmtUptime(sh.uptime_seconds || 0);
-      const latSec = ((sh.avg_latency_ms || 0) / 1000).toFixed(2);
-      document.getElementById('latencyDisplay').textContent = `${latSec} s`;
+      const latSec = (sh.avg_latency_ms || 0) / 1000;
+      animateNumber('latencyDisplay', latSec, v => `${v.toFixed(2)} s`, 700);
 
       const sr = data.success_rate;
       document.getElementById('successRateText').textContent = `${sr.success_rate_pct.toFixed(1)}% (${sr.successful}/${sr.total_requests})`;
       document.getElementById('successRateBar').style.width = `${sr.success_rate_pct}%`;
 
       const ml = data.memory_load;
-      document.getElementById('memPctBadge').textContent = `${ml.memory_usage_pct.toFixed(2)}%`;
-      document.getElementById('memTotalChars').textContent = fmtCompact(ml.total_chars);
+      animateNumber('memPctBadge', ml.memory_usage_pct, v => `${v.toFixed(2)}%`, 750);
+      animateNumber('memTotalChars', ml.total_chars, v => fmtCompact(v), 750);
       const memOffset = 201.06 - (201.06 * Math.min(100, ml.memory_usage_pct)) / 100;
       document.getElementById('memRing').style.strokeDashoffset = memOffset;
 
@@ -506,7 +775,7 @@
       memFilesEl.innerHTML = '';
       Object.entries(ml.files || {}).forEach(([fname, chars]) => {
         memFilesEl.innerHTML += `
-          <div class="flex items-center justify-between bg-slate-950/60 px-2.5 py-1 rounded-lg border border-sky-500/10">
+          <div class="flex items-center justify-between bg-slate-950/65 px-2.5 py-1 rounded-lg border border-sky-500/15 hover:border-cyan-400/40 transition">
             <span class="text-sky-300 font-semibold">${fname}.md</span>
             <span class="text-slate-300">${chars.toLocaleString()} ch</span>
           </div>
@@ -518,15 +787,15 @@
       const cronEl = document.getElementById('cronContainer');
       if (crons.length === 0) {
         cronEl.innerHTML = `
-          <div class="border border-dashed border-sky-500/20 rounded-xl p-3 text-center mono text-[10px] text-slate-400">
+          <div class="border border-dashed border-sky-500/25 rounded-xl p-3 text-center mono text-[10px] text-slate-400">
             STANDBY // NO SCHEDULED CRON JOBS MOUNTED
           </div>
         `;
       } else {
         cronEl.innerHTML = crons.map(c => `
-          <div class="bg-slate-950/60 border border-sky-400/25 rounded-xl px-3 py-2 flex items-center justify-between mono text-xs">
+          <div class="bg-slate-950/65 border border-sky-400/30 rounded-xl px-3 py-2 flex items-center justify-between mono text-xs">
             <span class="text-white font-semibold">${c.name || c.id}</span>
-            <span class="text-sky-300 text-[10px]">${c.schedule || 'ACTIVE'}</span>
+            <span class="text-cyan-300 text-[10px]">${c.schedule || 'ACTIVE'}</span>
           </div>
         `).join('');
       }
@@ -543,14 +812,14 @@
         const isPrimary = idx === 0;
 
         modelsEl.innerHTML += `
-          <div class="bg-slate-950/75 border ${isPrimary ? 'border-sky-400/50 shadow-[0_0_20px_-8px_rgba(56,189,248,0.5)]' : 'border-sky-500/20'} rounded-xl p-3 transition">
+          <div class="bg-slate-950/75 border ${isPrimary ? 'border-cyan-400/55 shadow-[0_0_22px_-6px_rgba(0,240,255,0.45)]' : 'border-sky-500/25'} rounded-xl p-3 transition hover:border-cyan-300/60">
             <div class="flex items-center justify-between mb-1">
-              <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 font-bold tracking-wider">${cleanProvider}</span>
+              <span class="mono text-[9px] px-1.5 py-0.5 rounded bg-sky-500/20 text-cyan-200 font-bold tracking-wider border border-cyan-400/25">${cleanProvider}</span>
               <span class="mono text-[10px] text-slate-400">${m.requests} REQ · ${m.share_pct.toFixed(1)}%</span>
             </div>
             <div class="flex items-baseline justify-between mt-1">
               <span class="text-sm font-bold text-white tracking-wide truncate pr-2">${m.model}</span>
-              <span class="mono text-xs font-bold text-sky-300 shrink-0">$${mCost.toFixed(2)}</span>
+              <span class="mono text-xs font-bold text-cyan-300 shrink-0">$${mCost.toFixed(2)}</span>
             </div>
             <div class="flex items-center justify-between mono text-[10px] text-slate-400 mt-1.5">
               <span>IN: ${fmtCompact(m.input_tokens)}</span>
@@ -558,7 +827,7 @@
               <span class="text-white font-semibold">Σ ${fmtCompact(mTotal)}</span>
             </div>
             <div class="w-full h-1.5 bg-slate-900 rounded-full mt-2 overflow-hidden">
-              <div class="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-300" style="width: ${Math.max(4, m.share_pct)}%"></div>
+              <div class="energy-bar h-full rounded-full bg-gradient-to-r from-sky-600 via-cyan-400 to-sky-200" style="width: ${Math.max(4, m.share_pct)}%"></div>
             </div>
           </div>
         `;
@@ -576,15 +845,25 @@
       (rl.tpm?.per_key || []).forEach(k => {
         const isCooling = (k.cooldown_left_s || 0) > 0;
         keyPoolEl.innerHTML += `
-          <div class="bg-slate-950/70 border ${isCooling ? 'border-amber-400/50' : 'border-sky-500/15'} rounded-lg px-2.5 py-1.5 flex items-center justify-between mono text-[10px]">
+          <div class="bg-slate-950/75 border ${isCooling ? 'border-amber-400/55' : 'border-sky-500/20'} rounded-lg px-2.5 py-1.5 flex items-center justify-between mono text-[10px]">
             <span class="text-slate-300 truncate">${k.key}</span>
-            <span class="${isCooling ? 'text-amber-300' : 'text-sky-400'} font-bold">${isCooling ? k.cooldown_left_s + 's' : 'OK'}</span>
+            <span class="${isCooling ? 'text-amber-300 animate-pulse' : 'text-cyan-300'} font-bold flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full ${isCooling ? 'bg-amber-400' : 'bg-cyan-400 animate-pulse'}"></span>
+              ${isCooling ? k.cooldown_left_s + 's' : 'OK'}
+            </span>
           </div>
         `;
       });
     }
 
     async function fetchTelemetry() {
+      const syncIcon = document.getElementById('syncIcon');
+      if (syncIcon) {
+        syncIcon.classList.remove('spin-once');
+        void syncIcon.offsetWidth;
+        syncIcon.classList.add('spin-once');
+      }
+
       const baseUrl = (localStorage.getItem('hermes_api_base') || '').replace(/\/$/, '');
       const user = localStorage.getItem('hermes_auth_user') || '';
       const pass = localStorage.getItem('hermes_auth_pass') || '';
@@ -646,11 +925,13 @@
 
     fetchTelemetry();
     setInterval(fetchTelemetry, 15000);
-  </script>
-  <script>
+
+    /* PWA Service Worker 注册（保留安装能力） */
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW register failed:', e); });
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js')
+          .then(function(reg) { console.log('SW registered, scope:', reg.scope); })
+          .catch(function(e) { console.log('SW registration failed:', e); });
       });
     }
   </script>
