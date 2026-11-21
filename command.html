@@ -864,9 +864,9 @@
         syncIcon.classList.add('spin-once');
       }
 
-      const baseUrl = (localStorage.getItem('hermes_api_base') || '').replace(/\/$/, '');
-      const user = localStorage.getItem('hermes_auth_user') || '';
-      const pass = localStorage.getItem('hermes_auth_pass') || '';
+      const baseUrl = (localStorage.getItem('hermes_api_base') || 'https://command.cloudkylie.dpdns.org').replace(/\/$/, '');
+      const user = localStorage.getItem('hermes_auth_user') || 'kylie';
+      const pass = localStorage.getItem('hermes_auth_pass') || 'yAsTWg5TBlt5uJMjvEzWMfLG';
 
       const endpoint = `${baseUrl}/api/command?range=${currentRange}`;
       const headers = {};
