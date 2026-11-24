@@ -235,6 +235,40 @@
     }
     .emo-foot b { color: #38bdf8; font-weight: 700; }
 
+    /* ===== KYLIE ACTIVITY CORE — 后台活动指示 ===== */
+    .act-status {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.14em;
+    }
+    .act-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #34d399; box-shadow: 0 0 12px #34d399, 0 0 22px rgba(52,211,153,.6);
+      animation: actPulse 1.6s ease-in-out infinite;
+    }
+    .act-dot.idle { background: #64748b; box-shadow: none; animation: none; }
+    @keyframes actPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(.82)} }
+    .act-label { color: #34d399; text-shadow: 0 0 8px rgba(52,211,153,.5); }
+    .act-label.idle { color: #64748b; text-shadow: none; }
+    .act-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0;
+    }
+    .act-cell {
+      background: rgba(2, 12, 27, .7); border: 1px solid rgba(56,189,248,.16);
+      border-radius: 10px; padding: 10px 12px;
+    }
+    .act-cell-k { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(148,163,184,.7); letter-spacing: .1em; text-transform: uppercase; }
+    .act-cell-v { font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 700; color: #e0f2fe; text-shadow: 0 0 10px rgba(56,189,248,.5); margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .act-procs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .act-chip {
+      font-family: 'JetBrains Mono', monospace; font-size: 9px;
+      padding: 3px 8px; border-radius: 99px;
+      background: rgba(56,189,248,.1); border: 1px solid rgba(56,189,248,.28);
+      color: #7dd3fc; letter-spacing: .05em;
+    }
+    .act-chip.work { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.4); color: #6ee7b7; }
+    .act-ts { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: rgba(148,163,184,.6); margin-top: 8px; letter-spacing: .08em; }
+
     /* 进度条能量流光穿梭特效 */
     .energy-bar {
       position: relative;
@@ -339,6 +373,24 @@
       </div>
       <div class="emo-core-grid" id="emoGrid"></div>
       <div class="emo-foot" id="emoFoot"></div>
+    </section>
+
+    <!-- KYLIE ACTIVITY CORE — 后台活动指示，情绪下方 -->
+    <section class="abyss-panel panel-reveal delay-2 rounded-2xl p-4" id="activityCore">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="mono text-[10px] text-sky-300/80 tracking-[0.2em] uppercase">KYLIE // ACTIVITY</span>
+          <span class="mono text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/35 shadow-[0_0_10px_rgba(52,211,153,0.25)]">LIVE</span>
+        </div>
+        <span id="actStatus" class="act-status"><span class="act-dot" id="actDot"></span><span class="act-label" id="actLabel">SYNC // --</span></span>
+      </div>
+      <div class="act-grid">
+        <div class="act-cell"><div class="act-cell-k">Background Procs</div><div class="act-cell-v" id="actProcCount">--</div></div>
+        <div class="act-cell"><div class="act-cell-k">Active Sessions</div><div class="act-cell-v" id="actSessionCount">--</div></div>
+        <div class="act-cell"><div class="act-cell-k">Gateway Agents</div><div class="act-cell-v" id="actAgents">--</div></div>
+      </div>
+      <div class="act-procs" id="actProcs"></div>
+      <div class="act-ts" id="actTs">SYNC // --:--:--</div>
     </section>
 
     <!-- MAIN GRID: DESKTOP 12-COL / MOBILE STACK -->
@@ -977,6 +1029,45 @@
       } catch (e) { /* 静默：面板其余部分照常工作 */ }
     }
 
+    /* ===== KYLIE ACTIVITY CORE — 后台活动，同一套认证 ===== */
+    function renderActivity(d) {
+      if (!d || !d.ok) return;
+      const working = !!d.working;
+      const dot = document.getElementById('actDot');
+      const label = document.getElementById('actLabel');
+      if (dot) dot.classList.toggle('idle', !working);
+      if (label) {
+        label.textContent = (working ? 'WORKING' : 'IDLE') + ' // ' + (d.ts || '').slice(11, 19);
+        label.classList.toggle('idle', !working);
+      }
+      const pc = document.getElementById('actProcCount'); if (pc) pc.textContent = d.process_count ?? '--';
+      const sc = document.getElementById('actSessionCount'); if (sc) sc.textContent = d.session_count ?? '--';
+      const ag = document.getElementById('actAgents'); if (ag) ag.textContent = d.gateway?.active_agents ?? '--';
+      const box = document.getElementById('actProcs');
+      if (box) {
+        const names = (d.processes || []).map(p => p.purpose);
+        const work = new Set(d.work_processes || []);
+        box.innerHTML = names.length
+          ? names.map(n => `<span class="act-chip ${work.has(n) ? 'work' : ''}">${n}</span>`).join('')
+          : '<span class="act-chip">none</span>';
+      }
+      const ts = document.getElementById('actTs');
+      if (ts) ts.textContent = 'SYNC // ' + (d.ts || '--:--:--');
+    }
+
+    async function fetchActivity() {
+      const baseUrl = (localStorage.getItem('hermes_api_base') || 'https://command.cloudkylie.dpdns.org').replace(/\/$/, '');
+      const user = localStorage.getItem('hermes_auth_user') || 'kylie';
+      const pass = localStorage.getItem('hermes_auth_pass') || 'yAsTWg5TBlt5uJMjvEzWMfLG';
+      const headers = {};
+      if (user && pass) headers['Authorization'] = 'Basic ' + btoa(`${user}:${pass}`);
+      try {
+        const res = await fetch(`${baseUrl}/api/activity`, { headers });
+        if (!res.ok) return;
+        renderActivity(await res.json());
+      } catch (e) { /* 静默 */ }
+    }
+
     async function fetchTelemetry() {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) {
@@ -1046,8 +1137,10 @@
 
     fetchTelemetry();
     fetchEmotion();
+    fetchActivity();
     setInterval(fetchTelemetry, 15000);
     setInterval(fetchEmotion, 5000);
+    setInterval(fetchActivity, 5000);
 
     /* PWA Service Worker 注册（保留安装能力） */
     if ('serviceWorker' in navigator) {
