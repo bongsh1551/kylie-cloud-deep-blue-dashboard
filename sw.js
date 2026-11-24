@@ -1,4 +1,4 @@
-const CACHE = 'deepblue-v2';
+const CACHE = 'deepblue-v2-emotion';
 self.addEventListener('install', e => { self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
