@@ -1105,6 +1105,9 @@
         rangeIndicator.style.transform = `translateX(${idx * 100}%)`;
         rangeBtns.forEach(b => b.classList.replace('text-sky-200', 'text-slate-400'));
         btn.classList.replace('text-slate-400', 'text-sky-200');
+        // 立即同步文字里的范围标签，不用等后端返回（避免文字慢半拍）
+        const syncEl = document.getElementById('lastSyncText');
+        if (syncEl) syncEl.textContent = syncEl.textContent.replace(/\([^)]*\)\s*$/, `(${currentRange.toUpperCase()})`);
         fetchTelemetry();
       });
     });
