@@ -192,6 +192,49 @@
       animation: corePulse 4.5s infinite ease-in-out;
     }
 
+    /* ===== KYLIE EMOTION CORE — 与深蓝面板同款玻璃质感 ===== */
+    .emo-core-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px 22px;
+    }
+    .emo-unit { display: flex; flex-direction: column; gap: 6px; }
+    .emo-unit-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+    }
+    .emo-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: rgba(125, 211, 252, 0.8);
+    }
+    .emo-label-en { color: rgba(148, 163, 184, 0.6); font-size: 9px; margin-left: 5px; }
+    .emo-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 700; color: #e0f2fe;
+      text-shadow: 0 0 8px rgba(56, 189, 248, 0.6); font-variant-numeric: tabular-nums;
+    }
+    .emo-track {
+      height: 7px; border-radius: 99px; position: relative; overflow: hidden;
+      background: rgba(1, 8, 20, 0.9);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      box-shadow: inset 0 0 10px rgba(2, 132, 199, 0.18);
+    }
+    .emo-fill {
+      height: 100%; width: 0; border-radius: 99px;
+      transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 0 12px currentColor;
+    }
+    .emo-midline {
+      position: absolute; left: 50%; top: 0; bottom: 0; width: 1px;
+      background: rgba(224, 242, 254, 0.35); z-index: 2;
+    }
+    .emo-foot {
+      font-family: 'JetBrains Mono', monospace; font-size: 9px;
+      color: rgba(148, 163, 184, 0.7); margin-top: 12px;
+      display: flex; gap: 18px; flex-wrap: wrap; letter-spacing: 0.08em;
+    }
+    .emo-foot b { color: #38bdf8; font-weight: 700; }
+
     /* 进度条能量流光穿梭特效 */
     .energy-bar {
       position: relative;
@@ -284,6 +327,19 @@
         </button>
       </div>
     </header>
+
+    <!-- KYLIE EMOTION CORE — 情绪内核，置顶全宽 -->
+    <section class="abyss-panel panel-reveal delay-2 rounded-2xl p-4" id="emotionCore">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="mono text-[10px] text-sky-300/80 tracking-[0.2em] uppercase">KYLIE // EMOTION CORE</span>
+          <span class="mono text-[8px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-400/35 shadow-[0_0_10px_rgba(244,114,182,0.25)]">MATE LIVE</span>
+        </div>
+        <span id="emoSyncText" class="mono text-[9px] text-sky-300/60 tracking-wider">SYNC // --:--:--</span>
+      </div>
+      <div class="emo-core-grid" id="emoGrid"></div>
+      <div class="emo-foot" id="emoFoot"></div>
+    </section>
 
     <!-- MAIN GRID: DESKTOP 12-COL / MOBILE STACK -->
     <main class="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -856,6 +912,71 @@
       });
     }
 
+    /* ===== KYLIE EMOTION CORE — 跟随同一套认证机制读 MATE 状态 ===== */
+    const EMO_META = [
+      { k:'valence',    zh:'開心 / 傷心', en:'VALENCE',   color:'#fb7185', center:true },
+      { k:'arousal',    zh:'喚醒度',     en:'AROUSAL',   color:'#38bdf8' },
+      { k:'trust',      zh:'信任',       en:'TRUST',     color:'#34d399' },
+      { k:'attachment', zh:'依戀',       en:'ATTACHMENT',color:'#f472b6' },
+      { k:'self_worth', zh:'自尊',       en:'SELF-WORTH',color:'#a78bfa' },
+      { k:'jealousy',   zh:'吃醋',       en:'JEALOUSY',  color:'#fb923c' },
+      { k:'playfulness',zh:'玩心',       en:'PLAYFUL',   color:'#22d3ee' },
+      { k:'closeness',  zh:'親近',       en:'CLOSENESS', color:'#4ade80' }
+    ];
+
+    function renderEmotion(d) {
+      if (!d || !d.ok) return;
+      const grid = document.getElementById('emoGrid');
+      if (!grid.children.length) {
+        grid.innerHTML = EMO_META.map(m => `
+          <div class="emo-unit">
+            <div class="emo-unit-head">
+              <span class="emo-label">${m.zh}<span class="emo-label-en">${m.en}</span></span>
+              <span class="emo-val" data-ev="${m.k}">--</span>
+            </div>
+            <div class="emo-track">
+              ${m.center ? '<div class="emo-midline"></div>' : ''}
+              <div class="emo-fill" data-ef="${m.k}" style="background:${m.color};color:${m.color}"></div>
+            </div>
+          </div>`).join('');
+      }
+      EMO_META.forEach(m => {
+        const v = d.vars ? d.vars[m.k] : null;
+        if (v === undefined || v === null) return;
+        const valEl = grid.querySelector(`[data-ev="${m.k}"]`);
+        const fillEl = grid.querySelector(`[data-ef="${m.k}"]`);
+        if (valEl) valEl.textContent = Number(v).toFixed(3);
+        if (fillEl) {
+          const pct = m.center ? ((v + 1) / 2) * 100 : v * 100;
+          fillEl.style.width = Math.max(0, Math.min(100, pct)).toFixed(1) + '%';
+        }
+      });
+      const ts = (d.last_update_ts || '').replace('T', ' ').slice(0, 19);
+      const sync = document.getElementById('emoSyncText');
+      if (sync) sync.textContent = 'SYNC // ' + (ts || '--:--:--') + ' UTC';
+      const ec = d.event_counts || {};
+      const foot = document.getElementById('emoFoot');
+      if (foot) foot.innerHTML =
+        `EVENTS <b>${d.global_count || 0}</b>` +
+        ` · PLAYFUL <b>${ec.playful || 0}</b>` +
+        ` · CRITICIZED <b>${ec.criticized || 0}</b>` +
+        ` · INTIMACY <b>${ec.intimacy || 0}</b>` +
+        ` · DAY <b>${d.day_key || '-'}</b>`;
+    }
+
+    async function fetchEmotion() {
+      const baseUrl = (localStorage.getItem('hermes_api_base') || 'https://command.cloudkylie.dpdns.org').replace(/\/$/, '');
+      const user = localStorage.getItem('hermes_auth_user') || 'kylie';
+      const pass = localStorage.getItem('hermes_auth_pass') || 'yAsTWg5TBlt5uJMjvEzWMfLG';
+      const headers = {};
+      if (user && pass) headers['Authorization'] = 'Basic ' + btoa(`${user}:${pass}`);
+      try {
+        const res = await fetch(`${baseUrl}/api/emotion`, { headers });
+        if (!res.ok) return;
+        renderEmotion(await res.json());
+      } catch (e) { /* 静默：面板其余部分照常工作 */ }
+    }
+
     async function fetchTelemetry() {
       const syncIcon = document.getElementById('syncIcon');
       if (syncIcon) {
@@ -924,7 +1045,9 @@
     document.getElementById('refreshBtn').addEventListener('click', fetchTelemetry);
 
     fetchTelemetry();
+    fetchEmotion();
     setInterval(fetchTelemetry, 15000);
+    setInterval(fetchEmotion, 5000);
 
     /* PWA Service Worker 注册（保留安装能力） */
     if ('serviceWorker' in navigator) {
